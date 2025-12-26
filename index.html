@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>18 Months of Us</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <style>
+        :root {
+            --bg: #050505;
+            --pink: #ff4d6d;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-dim: #b0b0b0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text-main); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        body.locked { height: 100vh; overflow: hidden; }
+
+        /* --- BACKGROUND PARTICLES --- */
+        #bg-canvas { position: fixed; top: 0; left: 0; z-index: -1; pointer-events: none; }
+
+        /* --- INITIAL GAME GATE --- */
+        #gate {
+            height: 100vh; display: flex; justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, #1a0b10 0%, #050505 100%);
+        }
+        .card {
+            background: var(--glass); backdrop-filter: blur(20px); border: 1px solid var(--border);
+            padding: 3rem; border-radius: 40px; text-align: center; width: 90%; max-width: 500px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+        }
+        h1 { font-family: 'Dancing Script', cursive; font-size: 3.5rem; color: var(--pink); margin-bottom: 1rem; }
+        .gif-box { width: 140px; height: 140px; margin: 0 auto 1.5rem; border-radius: 50%; overflow: hidden; border: 2px solid var(--pink); }
+        .gif-box img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .btn-wrap { position: relative; height: 60px; margin-top: 2rem; }
+        .btn { padding: 12px 40px; border-radius: 50px; border: none; font-weight: 600; cursor: pointer; transition: 0.3s; position: absolute; }
+        #yesBtn { background: var(--pink); color: white; left: 20%; box-shadow: 0 10px 20px rgba(255, 77, 109, 0.3); }
+        #noBtn { background: white; color: black; right: 20%; z-index: 999; }
+
+        /* --- MAIN CONTENT (Unlocked after Yes) --- */
+        #main-journey { display: none; padding: 2rem; }
+        section { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 5rem 0; opacity: 0; transition: 1.5s; }
+        section.visible { opacity: 1; }
+
+        .content-wrap { max-width: 800px; width: 100%; background: var(--glass); border: 1px solid var(--border); padding: 3rem; border-radius: 30px; position: relative; overflow: hidden; }
+        .para { font-size: 1.1rem; line-height: 1.8; color: var(--text-dim); margin-bottom: 1.5rem; }
+        .highlight { color: var(--pink); font-weight: 600; }
+
+        /* --- PHOTO VIDEO MONTAGE --- */
+        .video-container {
+            width: 100%; height: 500px; border-radius: 20px; overflow: hidden; position: relative;
+            margin: 2rem 0; border: 1px solid var(--pink); box-shadow: 0 0 30px rgba(255, 77, 109, 0.2);
+        }
+        .slide {
+            position: absolute; width: 100%; height: 100%; background-size: cover; background-position: center;
+            opacity: 0; animation: slideShow 32s infinite; /* 8 images * 4s */
+        }
+        
+        /* Using Imgur-hosted versions of your uploaded photos */
+        .s1 { background-image: url('https://i.imgur.com/vHq4V9e.png'); animation-delay: 0s; }
+        .s2 { background-image: url('https://i.imgur.com/K1nS5R0.png'); animation-delay: 4s; }
+        .s3 { background-image: url('https://i.imgur.com/qgPzD6j.png'); animation-delay: 8s; }
+        .s4 { background-image: url('https://i.imgur.com/79U27Gv.png'); animation-delay: 12s; }
+        .s5 { background-image: url('https://i.imgur.com/6XzWfPj.png'); animation-delay: 16s; }
+        .s6 { background-image: url('https://i.imgur.com/fA6S6D9.png'); animation-delay: 20s; }
+        .s7 { background-image: url('https://i.imgur.com/O6PzX6K.png'); animation-delay: 24s; }
+        .s8 { background-image: url('https://i.imgur.com/8N4z6Sj.png'); animation-delay: 28s; }
+
+        @keyframes slideShow {
+            0% { opacity: 0; transform: scale(1.1); }
+            5% { opacity: 1; transform: scale(1.05); }
+            20% { opacity: 1; transform: scale(1); }
+            25% { opacity: 0; transform: scale(1); }
+            100% { opacity: 0; }
+        }
+
+        .scroll-down { position: absolute; bottom: 30px; animation: bounce 2s infinite; color: var(--pink); font-size: 1.5rem; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+    </style>
+</head>
+<body class="locked">
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="gate">
+        <div class="card animate__animated animate__fadeIn">
+            <div class="gif-box">
+                <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3N5bm9scHdzbndmZnp0bXBxeHh4eHh4eHh4eHh4eHh4eHh4eHh4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/c76IJLufpNwSULPk2v/giphy.gif" alt="Bunny">
+            </div>
+            <h1>Wait a second...</h1>
+            <p style="color: var(--text-dim);">Before we celebrate our 18 months, I have to know... do you love me?</p>
+            <div class="btn-wrap">
+                <button class="btn" id="yesBtn">Yes!</button>
+                <button class="btn" id="noBtn">No</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-journey">
+        
+        <section>
+            <div class="content-wrap">
+                <h1>18 Months Together</h1>
+                <p class="para">Eighteen months. That’s <span class="highlight">547 days</span> of waking up knowing I have the most incredible girl by my side. Every single day, my love for you grows in ways I never thought possible.</p>
+                <p class="para">You aren't just my girlfriend; you're my safe place, my best friend, and the person who makes every boring moment feel like a movie. I wrote this for you to show you how much you mean to me.</p>
+                <div class="gif-box" style="width: 100px; height: 100px; margin: 1rem 0;">
+                    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmZ1bGNwN2RxeHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/MeIucaj5TK8uY/giphy.gif">
+                </div>
+                <div class="scroll-down">↓</div>
+            </div>
+        </section>
+
+        <section>
+            <div class="content-wrap">
+                <h2>Our Memories in Motion</h2>
+                <div class="video-container">
+                    <div class=""C:\Users\sankh\Downloads\Screenshot_20250223_012225_Gallery.jpg""></div>
+                    <div class="slide s2"></div>
+                    <div class="slide s3"></div>
+                    <div class="slide s4"></div>
+                    <div class="slide s5"></div>
+                    <div class="slide s6"></div>
+                    <div class="slide s7"></div>
+                    <div class="slide s8"></div>
+                </div>
+                <p class="para">Looking at these pictures reminds me of how far we've come. Every kiss, every hand-hold, every "I love you" is etched into my heart forever.</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="content-wrap">
+                <h2>Why I Adore You</h2>
+                <p class="para">I love the way you laugh at my stupid jokes. I love how you look when you're sleepy. I love how you've supported me through every high and low of the last year and a half.</p>
+                <p class="para">There is a <span class="highlight">sparkle in your eyes</span> that makes everything else disappear. Thank you for choosing me every day for 18 months. I promise to keep choosing you for the rest of our lives.</p>
+                <p class="para">This is just the beginning of our story. I can't wait to see what the next 18 months, and the next 18 years, have in store for us.</p>
+                <div class="gif-box" style="width: 200px; height: 150px; border-radius: 20px;">
+                    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHpwaXFmZzR6NHJ4OHB4ZHh4eHh4eHh4eHh4eHh4eHh4eHh4JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/MDJ9IbxxvDUQM/giphy.gif">
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h1 style="font-size: 5rem;">Happy 18th, My Love!</h1>
+            <p style="color: var(--pink); font-size: 1.5rem;">Forever & Always ❤️</p>
+        </section>
+    </div>
+
+    <script>
+        // --- 1. DODGING NO BUTTON ---
+        const noBtn = document.getElementById('noBtn');
+        const moveNo = () => {
+            const x = Math.random() * (window.innerWidth - 100);
+            const y = Math.random() * (window.innerHeight - 50);
+            noBtn.style.position = 'fixed';
+            noBtn.style.left = x + 'px';
+            noBtn.style.top = y + 'px';
+        };
+        noBtn.addEventListener('mouseover', moveNo);
+        noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNo(); });
+
+        // --- 2. THE REVEAL ---
+        document.getElementById('yesBtn').addEventListener('click', () => {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            
+            document.getElementById('gate').style.display = 'none';
+            document.getElementById('main-journey').style.display = 'block';
+            document.body.classList.remove('locked');
+
+            // Trigger scroll reveal
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add('visible');
+                });
+            }, { threshold: 0.1 });
+            document.querySelectorAll('section').forEach(s => observer.observe(s));
+        });
+
+        // --- 3. BACKGROUND PARTICLES ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let pts = [];
+        const init = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.addEventListener('resize', init);
+        init();
+
+        class Pt {
+            constructor() { this.reset(); }
+            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.s = Math.random() * 2; this.v = Math.random() * 0.4 + 0.1; }
+            draw() { 
+                this.y -= this.v; if(this.y < 0) this.reset();
+                ctx.fillStyle = "rgba(255, 77, 109, 0.2)";
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.s, 0, Math.PI*2); ctx.fill();
+            }
+        }
+        for(let i=0; i<60; i++) pts.push(new Pt());
+        function loop() { ctx.clearRect(0,0,canvas.width, canvas.height); pts.forEach(p => p.draw()); requestAnimationFrame(loop); }
+        loop();
+    </script>
+</body>
+</html>
