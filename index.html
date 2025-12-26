@@ -161,61 +161,76 @@
     </div>
 
     <script>
-        // --- 1. DODGING NO BUTTON (ALWAYS inside btn-wrap + never overlaps YES) ---
+        // --- 1. DODGING NO BUTTON (ALWAYS inside window + NEVER overlaps Yes) ---
         const noBtn = document.getElementById('noBtn');
-        const yesBtn = document.getElementById('yesBtn');
-        const wrap = document.querySelector('.btn-wrap');
 
-        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
-        const overlaps = (a, b) => !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+        const overlaps = (a, b) => {
+            return !(
+                a.right <= b.left ||
+                a.left >= b.right ||
+                a.bottom <= b.top ||
+                a.top >= b.bottom
+            );
+        };
 
         const moveNo = () => {
-            const margin = 6;
+            const yesBtn = document.getElementById('yesBtn');
+            const margin = 12;
 
-            // Keep No relative to the btn-wrap so it can't leave the visible card area
-            noBtn.style.position = 'absolute';
+            // Use fixed positioning always (avoids "jump then measure" issues)
+            noBtn.style.position = 'fixed';
+            noBtn.style.right = 'auto';
+            noBtn.style.bottom = 'auto';
 
-            const wrapRect = wrap.getBoundingClientRect();
+            // Measure sizes
+            const noRect0 = noBtn.getBoundingClientRect();
+            const bw = noRect0.width || 100;
+            const bh = noRect0.height || 50;
+
+            // Allowed bounds INSIDE viewport
+            const minX = margin;
+            const minY = margin;
+            const maxX = Math.max(margin, window.innerWidth - bw - margin);
+            const maxY = Math.max(margin, window.innerHeight - bh - margin);
+
+            // Yes button rect (in viewport coords)
             const yesRect = yesBtn.getBoundingClientRect();
 
-            // Measure No size (after ensuring position style)
-            const noRectNow = noBtn.getBoundingClientRect();
-            const bw = noRectNow.width || 100;
-            const bh = noRectNow.height || 50;
+            // Try multiple random spots until it's valid
+            let x = minX, y = minY;
+            for (let tries = 0; tries < 200; tries++) {
+                x = minX + Math.random() * (maxX - minX);
+                y = minY + Math.random() * (maxY - minY);
 
-            const maxX = Math.max(margin, wrapRect.width - bw - margin);
-            const maxY = Math.max(margin, wrapRect.height - bh - margin);
-
-            let tries = 0;
-            while (tries < 80) {
-                const x = clamp(Math.random() * maxX, margin, maxX);
-                const y = clamp(Math.random() * maxY, margin, maxY);
-
+                // Apply candidate position
                 noBtn.style.left = x + 'px';
-                noBtn.style.top  = y + 'px';
+                noBtn.style.top = y + 'px';
 
                 const noRect = noBtn.getBoundingClientRect();
 
-                // Must NOT overlap YES and must stay inside wrap bounds
-                const insideWrap =
-                    noRect.left >= wrapRect.left + margin &&
-                    noRect.top >= wrapRect.top + margin &&
-                    noRect.right <= wrapRect.right - margin &&
-                    noRect.bottom <= wrapRect.bottom - margin;
+                // Hard-guard: inside viewport
+                const inside =
+                    noRect.left >= 0 &&
+                    noRect.top >= 0 &&
+                    noRect.right <= window.innerWidth &&
+                    noRect.bottom <= window.innerHeight;
 
-                if (insideWrap && !overlaps(noRect, yesRect)) return;
+                // Must NOT overlap Yes
+                const ok = inside && !overlaps(noRect, yesRect);
 
-                tries++;
+                if (ok) return;
             }
 
-            // Fallback: force it to the far right/top inside wrap (still inside)
+            // Fallback (guaranteed visible): put it near top-right but still inside
             noBtn.style.left = maxX + 'px';
-            noBtn.style.top  = margin + 'px';
+            noBtn.style.top = minY + 'px';
         };
 
         noBtn.addEventListener('mouseover', moveNo);
         noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNo(); });
+
+        // If window resizes, re-place safely
+        window.addEventListener('resize', moveNo);
 
         // --- 2. THE REVEAL ---
         document.getElementById('yesBtn').addEventListener('click', () => {
