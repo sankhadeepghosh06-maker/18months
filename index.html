@@ -161,96 +161,101 @@
     </div>
 
     <script>
-        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-        
-        const overlaps = (a, b) => {
-            return !(
-                a.right < b.left ||
-                a.left > b.right ||
-                a.bottom < b.top ||
-                a.top > b.bottom
-            );
-        };
-        
-        const moveNo = () => {
-            const margin = 12;
-            const yesBtn = document.getElementById('yesBtn');
-        
-            const noRect = noBtn.getBoundingClientRect();
-            const bw = noRect.width || 100;
-            const bh = noRect.height || 50;
-        
-            const yesRect = yesBtn.getBoundingClientRect();
-        
-            const maxX = window.innerWidth - bw - margin;
-            const maxY = window.innerHeight - bh - margin;
-        
-            let x, y, tries = 0;
-        
-            do {
-                x = clamp(Math.random() * maxX, margin, maxX);
-                y = clamp(Math.random() * maxY, margin, maxY);
-        
-                noBtn.style.left = x + 'px';
-                noBtn.style.top = y + 'px';
-        
-                tries++;
-                // safety exit (won't be needed, but prevents infinite loop)
-                if (tries > 50) break;
-        
-            } while (overlaps(noBtn.getBoundingClientRect(), yesRect));
-        
-            noBtn.style.position = 'fixed';
-        };
-
-        noBtn.addEventListener('mouseover', moveNo);
-        noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNo(); });
-
-        // If user resizes window after button moved, keep it inside
-        window.addEventListener('resize', () => {
-            const rect = noBtn.getBoundingClientRect();
-            if (rect.right > window.innerWidth || rect.bottom > window.innerHeight || rect.left < 0 || rect.top < 0) {
-                moveNo();
-            }
-        });
-
-        // --- 2. THE REVEAL ---
-        document.getElementById('yesBtn').addEventListener('click', () => {
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-
-            document.getElementById('gate').style.display = 'none';
-            document.getElementById('main-journey').style.display = 'block';
-            document.body.classList.remove('locked');
-
-            // Trigger scroll reveal
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) entry.target.classList.add('visible');
-                });
-            }, { threshold: 0.1 });
-            document.querySelectorAll('section').forEach(s => observer.observe(s));
-        });
-
-        // --- 3. BACKGROUND PARTICLES ---
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        let pts = [];
-        const init = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-        window.addEventListener('resize', init);
-        init();
-
-        class Pt {
-            constructor() { this.reset(); }
-            reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.s = Math.random() * 2; this.v = Math.random() * 0.4 + 0.1; }
-            draw() {
-                this.y -= this.v; if(this.y < 0) this.reset();
-                ctx.fillStyle = "rgba(255, 77, 109, 0.2)";
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.s, 0, Math.PI*2); ctx.fill();
-            }
+      // --- 1. DODGING NO BUTTON (never outside window + never overlaps YES) ---
+      const noBtn = document.getElementById('noBtn');
+      const yesBtn = document.getElementById('yesBtn');
+    
+      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    
+      const overlaps = (a, b) => {
+        return !(
+          a.right <= b.left ||
+          a.left >= b.right ||
+          a.bottom <= b.top ||
+          a.top >= b.bottom
+        );
+      };
+    
+      const moveNo = () => {
+        const margin = 12;
+    
+        // Force fixed positioning so measurements match where we place it
+        noBtn.style.position = 'fixed';
+    
+        const noRect0 = noBtn.getBoundingClientRect();
+        const bw = noRect0.width || 100;
+        const bh = noRect0.height || 50;
+    
+        const maxX = window.innerWidth - bw - margin;
+        const maxY = window.innerHeight - bh - margin;
+    
+        // If viewport is too small, just clamp it safely and stop
+        if (maxX < margin || maxY < margin) {
+          noBtn.style.left = margin + 'px';
+          noBtn.style.top = margin + 'px';
+          return;
         }
-        for(let i=0; i<60; i++) pts.push(new Pt());
-        function loop() { ctx.clearRect(0,0,canvas.width, canvas.height); pts.forEach(p => p.draw()); requestAnimationFrame(loop); }
-        loop();
+    
+        let x, y;
+        let tries = 0;
+    
+        // Re-read yes button rect (fixed spot)
+        const yesRect = yesBtn.getBoundingClientRect();
+    
+        do {
+          x = clamp(Math.random() * maxX, margin, maxX);
+          y = clamp(Math.random() * maxY, margin, maxY);
+    
+          noBtn.style.left = x + 'px';
+          noBtn.style.top = y + 'px';
+    
+          tries++;
+          if (tries > 80) break; // safety
+        } while (overlaps(noBtn.getBoundingClientRect(), yesRect));
+      };
+    
+      noBtn.addEventListener('mouseover', moveNo);
+      noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNo(); });
+    
+      // If user resizes window after button moved, keep it inside + not overlapping
+      window.addEventListener('resize', moveNo);
+    
+      // --- 2. THE REVEAL ---
+      document.getElementById('yesBtn').addEventListener('click', () => {
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    
+        document.getElementById('gate').style.display = 'none';
+        document.getElementById('main-journey').style.display = 'block';
+        document.body.classList.remove('locked');
+    
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) entry.target.classList.add('visible');
+          });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('section').forEach(s => observer.observe(s));
+      });
+    
+      // --- 3. BACKGROUND PARTICLES ---
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      let pts = [];
+      const init = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+      window.addEventListener('resize', init);
+      init();
+    
+      class Pt {
+        constructor() { this.reset(); }
+        reset() { this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height; this.s = Math.random() * 2; this.v = Math.random() * 0.4 + 0.1; }
+        draw() {
+          this.y -= this.v; if(this.y < 0) this.reset();
+          ctx.fillStyle = "rgba(255, 77, 109, 0.2)";
+          ctx.beginPath(); ctx.arc(this.x, this.y, this.s, 0, Math.PI*2); ctx.fill();
+        }
+      }
+      for(let i=0; i<60; i++) pts.push(new Pt());
+      function loop() { ctx.clearRect(0,0,canvas.width, canvas.height); pts.forEach(p => p.draw()); requestAnimationFrame(loop); }
+      loop();
     </script>
 </body>
 </html>
