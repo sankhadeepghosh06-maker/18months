@@ -161,30 +161,58 @@
     </div>
 
     <script>
-        // --- 1. DODGING NO BUTTON (kept inside window) ---
-        const noBtn = document.getElementById('noBtn');
-
         const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
+        
+        const overlaps = (a, b) => {
+            return !(
+                a.right < b.left ||
+                a.left > b.right ||
+                a.bottom < b.top ||
+                a.top > b.bottom
+            );
+        };
+        
         const moveNo = () => {
-            const margin = 10;
-            const rect = noBtn.getBoundingClientRect();
-            const bw = rect.width || 100;
-            const bh = rect.height || 50;
-
+            const margin = 12;
+            const yesBtn = document.getElementById('yesBtn');
+        
+            const noRect = noBtn.getBoundingClientRect();
+            const bw = noRect.width || 100;
+            const bh = noRect.height || 50;
+        
+            const yesRect = yesBtn.getBoundingClientRect();
+        
             const maxX = window.innerWidth - bw - margin;
             const maxY = window.innerHeight - bh - margin;
-
-            const x = clamp(Math.random() * maxX, margin, maxX);
-            const y = clamp(Math.random() * maxY, margin, maxY);
-
+        
+            let x, y, tries = 0;
+        
+            do {
+                x = clamp(Math.random() * maxX, margin, maxX);
+                y = clamp(Math.random() * maxY, margin, maxY);
+        
+                noBtn.style.left = x + 'px';
+                noBtn.style.top = y + 'px';
+        
+                tries++;
+                // safety exit (won't be needed, but prevents infinite loop)
+                if (tries > 50) break;
+        
+            } while (overlaps(noBtn.getBoundingClientRect(), yesRect));
+        
             noBtn.style.position = 'fixed';
-            noBtn.style.left = x + 'px';
-            noBtn.style.top = y + 'px';
         };
 
         noBtn.addEventListener('mouseover', moveNo);
         noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNo(); });
+
+        // If user resizes window after button moved, keep it inside
+        window.addEventListener('resize', () => {
+            const rect = noBtn.getBoundingClientRect();
+            if (rect.right > window.innerWidth || rect.bottom > window.innerHeight || rect.left < 0 || rect.top < 0) {
+                moveNo();
+            }
+        });
 
         // --- 2. THE REVEAL ---
         document.getElementById('yesBtn').addEventListener('click', () => {
